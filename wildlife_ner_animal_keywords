@@ -1,0 +1,101 @@
+import json
+import spacy
+import en_core_web_sm
+from datetime import datetime
+nlp = en_core_web_sm.load()
+
+#loading json and converting into py dictionary
+data = open("wildlife.json", encoding= "utf-8")
+text = data.read()
+data.close()
+wildlife= json.loads(text)
+#nacitanie tabulky s English animal names
+input = open('ANIMAL_LIST.csv', encoding='utf-8')
+rows = [row.strip().split(",") for row in input]
+input.close()
+
+#function - counting number of words in animal names from a table ANIMAL_LIST.csv
+def count_words(string):
+    # Removing the spaces from start and end
+    string1=string.strip()
+    # Initializing the count from 1 because we there is no space at the last 
+    count=1
+    # Iterating through the string
+    for i in string1:
+    # If we encounter space, increment the count with 1.
+        if i==" ":
+            count+=1
+      
+    return count
+#creating a list of strings containing all animal names from animal_list.csv
+animal_list= []
+for row in rows:
+  for animal in row:
+    animal_final = animal.strip('"')
+    animal_list.append(animal_final.lower())
+#word count of each animal name, the last word of the animal name phrase will be the keyword - to search for intersections in the wildlife.json 
+key_species = {}
+for animal in animal_list:
+  result = count_words(animal)
+#if the name of the animal - one-word, the word becomes a keyword, if more than one-word, the last word becomes a keyword
+  if result == 1:
+    key_species[animal] = [animal]
+  elif result > 1:
+    word = animal.split(" ")
+    species = word[-1]
+    
+    key_species[species] = [animal]
+
+
+
+keywords = key_species.keys()
+
+
+keywords = set(keywords)
+
+#iterating articles and searching for keywords intersections, the text of the article is lemmatized, if a keyword is found in the text of the article, it is added to the dictionary of the article, under key - keywords, at the same searching for NER in the body of articles -added to the dictionary, to - label = key. All new keys are part of dict2.
+wildlife = wildlife 
+wildlife_matches = []
+for item in wildlife:
+  article = item["body"]
+  item["publicationTime"] = datetime.fromtimestamp(int(item["publicationTime"])//1000).strftime("%B, %Y")  #string in format month + year - conversin of number of miliseconds from 1/1/1970 
+  doc = nlp(article)
+  lemma_list = []
+  for token in doc:
+    lemma_list.append(token.lemma_)
+  lemma_interesting = set(lemma_list).intersection(keywords)
+  lemma_interesting = list(lemma_interesting)
+  
+
+  
+  entities = []
+  labels = []
+
+
+  for ent in doc.ents:
+    entities.append(ent)
+    labels.append(ent.label_)
+
+  dict2 = {}
+
+  for key,value in zip(labels, entities):
+
+    if key not in dict2:
+      dict2[key] = []
+      if value not in dict2[key]:
+        dict2[key].append(value)
+    else:
+      if value not in dict2[key]:
+        dict2[key].append(value)
+  dict2["ANIMALS"] = lemma_interesting
+  
+  #in the original format the values of the keys under entities were in span format, therefore it was not possible to create json output ==> converting to string 
+  for key in dict2:
+    item.update({key:[]})
+    for i in dict2[key]:
+      item[key].append(str(i))
+  del item['body']
+
+#creating output json file
+with open('wildlife_out.json', 'w', encoding='utf-8') as f:
+  json.dump(wildlife, f, indent=2)
