@@ -1,0 +1,61 @@
+import json 
+import requests
+#extracting geo location for GPE 
+GOOGLE_API_KEY = 'AIzaSyBnBpyGFSjNn3DXiybryRoKTYwHH2lfMwM' 
+
+def extract_lat_long_via_address(address_or_zipcode):
+    lat, lng = None, None
+    api_key = GOOGLE_API_KEY
+    base_url = "https://maps.googleapis.com/maps/api/geocode/json"
+    endpoint = f"{base_url}?address={address_or_zipcode}&key={api_key}"
+    
+    if r.status_code not in range(200, 299):
+        return None, None
+    try:
+        '''
+        This try block incase any of our inputs are invalid. This is done instead
+        of actually writing out handlers for all kinds of responses.
+        '''
+        results = r.json()['results'][0]
+        lat = results['geometry']['location']['lat']
+        lng = results['geometry']['location']['lng']
+    except:
+        pass
+    return lat, lng
+
+#opening ouput file created in wildlife_ner_animal_keywords.py
+with open('wildlife_out.json') as json_wildlife:
+    data = json.load(json_wildlife)
+
+#creating a new list of objects that contains - keys: title, publicationTime, publisher, url, GPE + lat, long, ANIMALS names
+wildlife_list = []
+
+wildlife_final_keys = ['title', 'publicationTime', 'publisher', 'url', 'GPE', 'ANIMALS']
+for item in data:
+  subdict = {x: item[x] for x in wildlife_final_keys if x in item}
+  wildlife_final = {}
+  for key in wildlife_final_keys:
+    
+    try:
+      
+      if key == 'GPE' and subdict['GPE']:
+        
+
+        wildlife_final['GPE'] = subdict['GPE'][0]
+        latlong = extract_lat_long_via_address(wildlife_final['GPE'])  
+        wildlife_final['latitude'] = latlong[0]
+        wildlife_final['longitude'] = latlong[1]  
+      else:
+        
+        wildlife_final[key] = subdict[key]
+      
+    except KeyError:
+      pass
+  
+  wildlife_list.append(wildlife_final)
+  
+    
+#creating final json output file for visualisation in Tableau
+
+with open('wildlife_final_visualisation.json', 'w', encoding='utf-8') as f:
+  json.dump(wildlife_list, f, indent=2)
