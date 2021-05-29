@@ -1,0 +1,471 @@
+-- JOINING ALL CITES RECORDS IN ONE TABLE
+
+CREATE OR REPLACE TABLE CITES AS
+SELECT * FROM "Trade_db_01"
+UNION ALL 
+SELECT * FROM "Trade_db_02"
+UNION ALL 
+SELECT * FROM "Trade_db_03"
+UNION ALL 
+SELECT * FROM "Trade_db_04"
+UNION ALL
+SELECT * FROM "Trade_db_05"
+UNION ALL 
+SELECT * FROM "Trade_db_06"
+UNION ALL
+SELECT * FROM "Trade_db_07"
+UNION ALL 
+SELECT * FROM "Trade_db_08"
+UNION ALL 
+SELECT * FROM "Trade_db_09"
+UNION ALL 
+SELECT * FROM "Trade_db_10"
+UNION ALL
+SELECT * FROM "Trade_db_11"
+UNION ALL 
+SELECT * FROM "Trade_db_12"
+UNION ALL 
+SELECT * FROM "Trade_db_13"
+UNION ALL
+SELECT * FROM "Trade_db_14"
+UNION ALL 
+SELECT * FROM "Trade_db_15"
+UNION ALL 
+SELECT * FROM "Trade_db_16"
+UNION ALL 
+SELECT * FROM "Trade_db_17"
+UNION ALL
+SELECT * FROM "Trade_db_18"
+UNION ALL 
+SELECT * FROM "Trade_db_19"
+UNION ALL
+SELECT * FROM "Trade_db_20"
+UNION ALL 
+SELECT * FROM "Trade_db_21"
+UNION ALL 
+SELECT * FROM "Trade_db_22"
+UNION ALL 
+SELECT * FROM "Trade_db_23"
+UNION ALL
+SELECT * FROM "Trade_db_24"
+UNION ALL 
+SELECT * FROM "Trade_db_25"
+UNION ALL 
+SELECT * FROM "Trade_db_26"
+UNION ALL
+SELECT * FROM "Trade_db_27"
+UNION ALL 
+SELECT * FROM "Trade_db_28"
+UNION ALL 
+SELECT * FROM "Trade_db_29"
+UNION ALL 
+SELECT * FROM "Trade_db_30"
+UNION ALL
+SELECT * FROM "Trade_db_31"
+UNION ALL 
+SELECT * FROM "Trade_db_32"
+UNION ALL 
+SELECT * FROM "Trade_db_33"
+UNION ALL
+SELECT * FROM "Trade_db_34"
+UNION ALL 
+SELECT * FROM "Trade_db_35"
+UNION ALL 
+SELECT * FROM "Trade_db_36"
+UNION ALL 
+SELECT * FROM "Trade_db_37"
+UNION ALL
+SELECT * FROM "Trade_db_38"
+UNION ALL 
+SELECT * FROM "Trade_db_39"
+UNION ALL 
+SELECT * FROM "Trade_db_40"
+UNION ALL
+SELECT * FROM "Trade_db_41"
+UNION ALL 
+SELECT * FROM "Trade_db_42"
+UNION ALL 
+SELECT * FROM "Trade_db_43"
+UNION ALL
+SELECT * FROM "Trade_db_44"
+;
+
+
+--- JOINING REGIONS ON CITES INDEX OF COUNTRIES + JOINING GAPMINDER NAMES OF COUNTRIES (IN ORDER TO BE ABLE TO JOIN DATA ON THEM IN NEXT STEPS)
+
+CREATE OR REPLACE TABLE COUNTRIES_WITH_REGIONS AS
+SELECT C1.COUNTRY
+      ,C1.COUNTRY_ID
+      ,C2."name"
+      ,GM."geo"
+      ,GM."name" AS GM_NAME
+      ,C2."region"
+      ,C2."sub_region"
+      ,C2."country_code"
+      ,C2."region_code"
+      ,C2."sub_region_code"
+FROM "Cites_country" AS C1
+LEFT JOIN "World_countries_regions" AS C2
+ON C1.COUNTRY_ID = C2."alpha_2"
+LEFT JOIN "gm_cis" AS GM
+ON C2."alpha_3" = upper(GM."geo")
+;
+
+UPDATE COUNTRIES_WITH_REGIONS
+SET "region" = 
+( CASE  
+    WHEN (COUNTRY_ID = 'PC') THEN 'Oceania' 
+    WHEN (COUNTRY_ID = 'XA') THEN 'Americas' 
+    WHEN (COUNTRY_ID = 'XC') THEN 'Americas'
+    WHEN (COUNTRY_ID = 'XF') THEN 'Africa'
+    WHEN (COUNTRY_ID = 'XM') THEN 'Americas'
+    WHEN (COUNTRY_ID = 'XS') THEN 'Asia'
+    WHEN (COUNTRY_ID = 'XV') THEN 'Unknown'
+    WHEN (COUNTRY_ID = 'XX') THEN 'Unknown'
+    WHEN (COUNTRY_ID = 'XX') THEN 'Unknown'
+    WHEN (COUNTRY_ID = 'ZZ') THEN 'Unknown'
+    ELSE  ('Europe')
+    END )
+WHERE "region" is null;
+
+UPDATE COUNTRIES_WITH_REGIONS SET "region" = 'Antarctica' WHERE "region" = '';
+
+-- JOINING CITES INDEXES ON CITES TABLES
+
+CREATE OR REPLACE TABLE CITES_NAMES AS
+SELECT M."Id"
+    ,M."Year"
+    ,SP."Kingdom"
+    ,M."Appendix"
+    ,M."Taxon"
+    ,SP."EnglishNames" AS "FullName"
+    ,M."Class"
+    ,M."Order"
+    ,M."Family"
+    ,M."Genus"
+    ,M."Term"
+    ,M."Quantity"
+    ,M."Unit"
+		,M."Importer"
+		,C1.Country AS "Import_country"
+    ,C1."region" AS "Import_region"
+		,M."Exporter"
+		,C2.Country AS "Export_country"
+    ,C2."region" AS "Export_region"
+ 		,M."Origin"
+		,C3.Country AS "Origin_country"
+    ,C3."region" AS "Origin_region"
+		,M."Purpose"
+    ,P."Purpose_detail"
+		,M."Source"
+    ,S."Source_detail"
+    ,M."Reporter_type"
+    ,M."Import_permit_RandomID"
+    ,M."Export_permit_RandomID"
+    ,M."Origin_permit_RandomID"
+FROM CITES AS M
+LEFT JOIN "Cites_purpose" AS P
+ON M."Purpose" = P."Purpose"
+LEFT JOIN "Cites_source" AS S
+ON M."Source" = s."Source"
+LEFT JOIN COUNTRIES_WITH_REGIONS AS C1
+ON M."Importer" = C1.Country_id
+LEFT JOIN COUNTRIES_WITH_REGIONS AS C2
+ON M."Exporter" = C2.Country_id
+LEFT JOIN COUNTRIES_WITH_REGIONS AS C3
+ON M."Origin" = C3.Country_id
+LEFT JOIN "Cites_list_of_species" AS SP
+ON M."Taxon" = SP."FullName"
+;
+
+-- FILTERING OUT RECORDS OF TRADES WITH PLANTS
+
+CREATE OR REPLACE TABLE CITES_NAMES AS
+SELECT * FROM CITES_NAMES
+WHERE "Kingdom" = 'Animalia'
+;
+
+-- JOINING GAPMINDER DATA
+
+CREATE OR REPLACE TABLE CITES_NAMES_1 AS 
+SELECT "Id"
+   ,"Year"
+   ,"Kingdom"
+   ,"Appendix"
+   ,"Taxon"
+   ,"FullName"
+   ,"Class"
+   ,"Order"
+   ,"Family"
+   ,"Genus"
+   ,"Term"
+   ,"Quantity"
+   ,"Unit"
+		,"Importer"
+		,"Import_country"
+        ,R1."GM_NAME" AS "Import_country_gm"
+    ,"Import_region"
+		,"Exporter"
+		,"Export_country"
+        ,R2."GM_NAME" AS "Export_country_gm"
+    ,"Export_region"
+ 		,"Origin"
+		,"Origin_country"
+        ,R3."GM_NAME" AS "Origin_country_gm"
+    ,"Origin_region"
+		,"Purpose"
+    ,"Purpose_detail"
+		,"Source"
+    ,"Source_detail"
+    ,"Reporter_type"
+    ,"Import_permit_RandomID"
+    ,"Export_permit_RandomID"
+    ,"Origin_permit_RandomID"
+FROM CITES_NAMES AS C
+LEFT JOIN COUNTRIES_WITH_REGIONS AS R1
+ON C."Import_country" = R1."COUNTRY"
+LEFT JOIN COUNTRIES_WITH_REGIONS AS R2
+ON C."Export_country" = R2."COUNTRY"
+LEFT JOIN COUNTRIES_WITH_REGIONS AS R3
+ON C."Origin_country" = R3."COUNTRY"
+;
+
+
+-- JOINING INCOME AND POPULATION THROUGH GM COUNTRY NAMES + ADDING DATA FOR CZECHOSLOVAKIA AND SOVIET UNION FROM EXTRA TABLES
+
+CREATE OR REPLACE TABLE CITES_FULL AS
+SELECT "Id"
+   ,"Year"
+   ,"Kingdom"
+   ,"Appendix"
+   ,"Taxon"
+   ,"FullName"
+   ,"Class"
+   ,"Order"
+   ,"Family"
+   ,"Genus"
+   ,"Term"
+   ,"Quantity"
+   ,"Unit"
+		,"Importer"
+		,"Import_country"
+        ,"Import_country_gm"
+        ,GMP."population" AS "Importer_population"
+        ,GMI."income" AS "Importer_income"
+        ,CZS.POPULATION_TOTAL as POPULATION_TOTAL_I
+        ,CZS.INCOME_TOTAL as INCOME_TOTAL_I
+        ,SU.POPULATION_R AS POPULATION_SU_I
+        ,SU.INCOME_R AS INCOME_R_I
+    ,"Import_region"
+		,"Exporter"
+		,"Export_country"
+        ,"Export_country_gm"
+        ,GMP2."population" AS "Exporter_population"
+        ,GMI2."income" AS "Exporter_income"
+        ,CZS2.POPULATION_TOTAL as POPULATION_TOTAL_E
+        ,CZS2.INCOME_TOTAL AS INCOME_TOTAL_E
+        ,SU2.POPULATION_R AS POPULATION_SU_E
+        ,SU2.INCOME_R AS INCOME_R_E
+    ,"Export_region"
+ 		,"Origin"
+		,"Origin_country"
+        ,"Origin_country_gm"
+        ,GMP3."population" AS "Origin_population"
+        ,GMI3."income" AS "Origin_income"
+        ,CZS3.POPULATION_TOTAL AS POPULATION_TOTAL_O
+        ,CZS3.INCOME_TOTAL AS INCOME_TOTAL_O
+        ,SU3.POPULATION_R AS POPULATION_SU_O
+        ,SU3.INCOME_R AS INCOME_R_O
+    ,"Origin_region"
+		,"Purpose"
+    ,"Purpose_detail"
+		,"Source"
+    ,"Source_detail"
+    ,"Reporter_type"
+    ,"Import_permit_RandomID"
+    ,"Export_permit_RandomID"
+    ,"Origin_permit_RandomID"
+FROM CITES_NAMES_1 AS C
+LEFT JOIN GM_POP_F AS GMP
+ON C."Import_country_gm" = GMP."country" AND C."Year" = GMP."year"
+LEFT JOIN GM_POP_F AS GMP2
+ON C."Export_country_gm" = GMP2."country" AND C."Year" = GMP2."year"
+LEFT JOIN GM_POP_F AS GMP3
+ON C."Origin_country_gm" = GMP3."country" AND C."Year" = GMP3."year"
+LEFT JOIN GM_INCOME_F AS GMI
+ON C."Import_country_gm" = GMI."country" AND C."Year" = GMI."year"
+LEFT JOIN GM_INCOME_F AS GMI2
+ON C."Export_country_gm" = GMI2."country" AND C."Year" = GMI2."year"
+LEFT JOIN GM_INCOME_F AS GMI3
+ON C."Origin_country_gm" = GMI3."country" AND C."Year" = GMI3."year"
+LEFT JOIN CZECHOSLOVAKIA AS CZS
+ON C."Import_country" = CZS.COUNTRY AND C."Year" = CZS.YEAR
+LEFT JOIN CZECHOSLOVAKIA AS CZS2
+ON C."Export_country" = CZS2.COUNTRY AND C."Year" = CZS2.YEAR
+LEFT JOIN CZECHOSLOVAKIA AS CZS3
+ON C."Origin_country" = CZS3.COUNTRY AND C."Year" = CZS3.YEAR
+LEFT JOIN SOVIET_UNION AS SU
+ON C."Import_country" = SU.COUNTRY AND C."Year" = SU.YEAR
+LEFT JOIN SOVIET_UNION AS SU2
+ON C."Export_country" = SU2.COUNTRY AND C."Year" = SU2.YEAR
+LEFT JOIN SOVIET_UNION AS SU3
+ON C."Origin_country" = SU3.COUNTRY AND C."Year" = SU3.YEAR
+;
+
+
+
+-- ADDING VALUES FOR CZECHOSLOVAKIA AND SOVIET UNION FROM EXTRA COLUMNS TO ORIGINAL ONES
+UPDATE CITES_FULL
+SET "Importer_population" =
+(CASE 
+    WHEN ("Import_country" = 'CZECHOSLOVAKIA') THEN POPULATION_TOTAL_I
+    WHEN ("Import_country" = 'SOVIET UNION') THEN POPULATION_SU_I
+    ELSE ("Importer_population")
+    END);
+    
+UPDATE CITES_FULL
+SET "Importer_income" =
+    (CASE
+     WHEN ("Import_country" = 'CZECHOSLOVAKIA') THEN INCOME_TOTAL_I
+     WHEN ("Import_country" = 'SOVIET UNION') THEN INCOME_R_I
+     ELSE ("Importer_income")
+     END)
+;
+
+UPDATE CITES_FULL
+SET "Exporter_population" =
+(CASE 
+    WHEN ("Export_country" = 'CZECHOSLOVAKIA') THEN POPULATION_TOTAL_E
+    WHEN ("Export_country" = 'SOVIET UNION') THEN POPULATION_SU_E
+    ELSE ("Exporter_population")
+    END);
+
+
+UPDATE CITES_FULL
+SET "Exporter_income" =
+    (CASE
+     WHEN ("Export_country" = 'CZECHOSLOVAKIA') THEN INCOME_TOTAL_E
+     WHEN ("Export_country" = 'SOVIET UNION') THEN INCOME_R_E
+     ELSE ("Exporter_income")
+     END)
+;
+
+UPDATE CITES_FULL
+SET "Origin_population" =
+(CASE 
+    WHEN ("Origin_country" = 'CZECHOSLOVAKIA') THEN POPULATION_TOTAL_O
+    WHEN ("Origin_country" = 'SOVIET UNION') THEN POPULATION_SU_O
+    ELSE ("Origin_population")
+    END);
+
+
+UPDATE CITES_FULL
+SET "Origin_income" =
+    (CASE
+     WHEN ("Origin_country" = 'CZECHOSLOVAKIA') THEN INCOME_TOTAL_O
+     WHEN ("Origin_country" = 'SOVIET UNION') THEN INCOME_R_O
+     ELSE ("Origin_income")
+     END)
+;
+
+-- DELETING EXTRA COLUMNS
+ALTER TABLE CITES_FULL
+DROP COLUMN POPULATION_TOTAL_I, INCOME_TOTAL_I, POPULATION_TOTAL_E, INCOME_TOTAL_E, POPULATION_TOTAL_O, INCOME_TOTAL_O, POPULATION_SU_I, 
+INCOME_R_I,POPULATION_SU_E, INCOME_R_E,POPULATION_SU_O,INCOME_R_O;
+
+
+-- ADDING NEW COLUMNS: UNIT_FINAL, QUANTITY_FINAL (FOR UNITS UNIFICATION AND QUANTITY ADJUSTMENT)
+
+ALTER TABLE CITES_FULL ADD COLUMN
+UNIT_FINAL VARCHAR,
+QUANTITY_FINAL FLOAT
+;
+
+-- UNITS UNIFICATION (TO LIMIT THEIR AMOUNT)
+
+UPDATE CITES_FULL
+SET "UNIT_FINAL" =
+    (CASE
+     WHEN ("Unit" = 'kg') THEN 'kg'
+     WHEN ("Unit" = 'ml') THEN 'ml'
+     WHEN ("Unit" = 'g') THEN 'kg'
+     WHEN ("Unit" = 'mg') THEN 'kg'
+     WHEN ("Unit" in ('sides', 'bellyskins', 'backskins', 'skins', 'hornback skins','pieces','(skins)')) THEN 'body parts'
+     WHEN ("Unit" in ('pairs','sets')) THEN 'pairs or sets'
+     WHEN ("Unit" in ('flasks','cartons','boxes','cans','shipments','bottles','bags','cases','items')) THEN 'other packages'
+     WHEN ("Unit" = 'cm') THEN 'm'
+     WHEN ("Unit" = 'cm2') THEN 'm2'
+     WHEN ("Unit" = 'l') THEN 'ml'
+     WHEN ("Unit" = 'microgrammes') THEN 'kg'
+     WHEN ("Unit" = 'cm3') THEN 'ml'
+     WHEN ("Unit" = 'm3') THEN 'ml'
+     WHEN ("Unit" = 'inches') THEN 'm'
+     WHEN ("Unit" = 'lbs') THEN 'kg'
+     ELSE ('')
+     END)
+;
+
+
+-- ADJUSTMENTS OF QUANTITY FOR CHANGED UNITS
+
+UPDATE CITES_FULL
+SET "QUANTITY_FINAL" =
+    (CASE
+     WHEN ("Unit" = 'g') THEN ("Quantity"/ 1000)
+     WHEN ("Unit" = 'mg') THEN ("Quantity"/ 1000000)
+     WHEN ("Unit" = 'cm') THEN ("Quantity"/ 100)
+     WHEN ("Unit" = 'cm2') THEN ("Quantity"/ 10000)
+     WHEN ("Unit" = 'l') THEN ("Quantity" * 1000)
+     WHEN ("Unit" = 'microgrammes') THEN ("Quantity"/ 1000000000)
+     WHEN ("Unit" = 'l') THEN ("Quantity" * 1000)
+     WHEN ("Unit" = 'cm3') THEN ("Quantity")
+     WHEN ("Unit" = 'm3') THEN ("Quantity"/ 1000000)
+     WHEN ("Unit" = 'ft2') THEN ("Quantity"/ 0.09290304)
+     WHEN ("Unit" = 'inches') THEN ("Quantity"/ 0.0254)
+     WHEN ("Unit" = 'lbs') THEN ("Quantity"/ 0.45359237)
+     ELSE ("Quantity")
+     END)
+;
+
+
+-- ADDING NULL UNITS BASED ON TERM
+
+UPDATE CITES_FULL 
+SET "UNIT_FINAL" =
+    (CASE 
+     WHEN ("Term" in ('trophies','live','bodies')) THEN "Term"
+     WHEN ("Term" in ('leather products (small)','shoes','leather products (large)','garments','leather items','plates','jewellery','hair products','rug','cloth','fur product (small)','cosmetics','musk')) THEN 'fashion or accessories'
+     WHEN ("Term" = 'unspecified') THEN ''
+     ELSE 'body parts'
+     END)
+WHERE "Unit" = '' AND "Quantity" <> ''
+;
+
+
+-- CHANGING NULL REGIONS TO UNKNOWN
+
+UPDATE CITES_FULL
+SET "Import_region" = 'Unknown'
+WHERE "Import_region" IS NULL;
+
+UPDATE CITES_FULL
+SET "Export_region" = 'Unknown'
+WHERE "Export_region" IS NULL;
+
+UPDATE CITES_FULL
+SET "Origin_region" = 'Unknown'
+WHERE "Origin_region" IS NULL;
+
+
+ -- CHANGING NULL ENGLISH NAMES TO LATIN TAXON
+ 
+UPDATE CITES_FULL
+SET "FullName" = "Taxon"
+WHERE "FullName" = ''; 
+
+
+-- CHANGING NULL PURPOSE TO UNKNOWN
+
+UPDATE CITES_FULL
+SET "Purpose_detail" = 'Unknown'
+WHERE "Purpose_detail" IS NULL;
