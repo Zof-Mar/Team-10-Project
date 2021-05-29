@@ -1,7 +1,7 @@
 import json 
 import requests
 #extracting geo location for GPE 
-GOOGLE_API_KEY = 'AIzaSyBnBpyGFSjNn3DXiybryRoKTYwHH2lfMwM' 
+GOOGLE_API_KEY = 'here is my key' 
 
 def extract_lat_long_via_address(address_or_zipcode):
     lat, lng = None, None
