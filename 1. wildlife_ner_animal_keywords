@@ -9,7 +9,7 @@ data = open("wildlife.json", encoding= "utf-8")
 text = data.read()
 data.close()
 wildlife= json.loads(text)
-#nacitanie tabulky s English animal names
+#loading CITES index table with English animal names
 input = open('ANIMAL_LIST.csv', encoding='utf-8')
 rows = [row.strip().split(",") for row in input]
 input.close()
